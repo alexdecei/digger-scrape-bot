@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { BotState, Result } from '../types';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/hooks/use-toast';
 
 export const useBotState = () => {
   const [botState, setBotState] = useState<BotState>({
