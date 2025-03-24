@@ -1,14 +1,74 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BotState, Result } from '../types';
 import { toast } from '@/hooks/use-toast';
 
+// Pre-populated example results
+const exampleResults: Result[] = [
+  {
+    id: 'example-1',
+    numeroAbo: 'A123456',
+    prenom: 'Jean',
+    codePostal: '75001',
+    selected: false,
+  },
+  {
+    id: 'example-2',
+    numeroAbo: 'A789012',
+    prenom: 'Marie',
+    codePostal: '69001',
+    selected: false,
+  },
+  {
+    id: 'example-3',
+    numeroAbo: 'A345678',
+    prenom: 'Thomas',
+    codePostal: '33000',
+    selected: false,
+  },
+  {
+    id: 'example-4',
+    numeroAbo: 'A901234',
+    prenom: 'Sophie',
+    codePostal: '44000',
+    selected: false,
+  },
+  {
+    id: 'example-5',
+    numeroAbo: 'A567890',
+    prenom: 'Lucas',
+    codePostal: '13001',
+    selected: false,
+  }
+];
+
 export const useBotState = () => {
-  const [botState, setBotState] = useState<BotState>({
-    isRunning: false,
-    isConnected: false,
-    results: [],
-  });
+  // Init from localStorage or use examples
+  const getInitialState = (): BotState => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('digger_bot_state');
+      if (savedState) {
+        try {
+          return JSON.parse(savedState);
+        } catch (e) {
+          console.error('Error parsing saved bot state', e);
+        }
+      }
+    }
+    
+    return {
+      isRunning: false,
+      isConnected: false,
+      results: exampleResults, // Pre-populate with examples
+    };
+  };
+
+  const [botState, setBotState] = useState<BotState>(getInitialState);
+
+  // Save state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('digger_bot_state', JSON.stringify(botState));
+  }, [botState]);
 
   // Toggle bot running state
   const toggleBot = async () => {

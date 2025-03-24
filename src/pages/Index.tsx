@@ -6,7 +6,6 @@ import BotConfigPanel from '../components/BotConfigPanel';
 import ResultsPanel from '../components/ResultsPanel';
 import { useFilters } from '../hooks/useFilters';
 import { useBotState } from '../hooks/useBotState';
-import { useResults } from '../hooks/useResults';
 
 // The password gate should connect to an API in a real application
 // For demonstration purposes, we're using a hardcoded password
@@ -16,7 +15,6 @@ const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { filters, updateMode, addPostalCode, removePostalCode, addName, removeName, addCode, removeCode, updateDateRange, resetFilters, addNamesFromText } = useFilters();
   const { botState, toggleBot, toggleResultSelection, selectAllResults, clearResults, copySelectedResults, exportSelectedResults } = useBotState();
-  const { searchTerm, setSearchTerm, filteredResults } = useResults(botState.results);
 
   const handleAuthenticate = () => {
     setIsAuthenticated(true);
@@ -55,9 +53,7 @@ const Index = () => {
             <div className="section-fade-in" style={{ '--delay': '200ms' } as React.CSSProperties}>
               <ResultsPanel
                 results={botState.results}
-                filteredResults={filteredResults}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
+                filteredResults={botState.results} // Pass the full results list
                 toggleResultSelection={toggleResultSelection}
                 selectAllResults={selectAllResults}
                 copySelectedResults={copySelectedResults}

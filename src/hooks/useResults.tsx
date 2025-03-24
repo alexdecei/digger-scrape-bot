@@ -1,21 +1,10 @@
 
-import { useState } from 'react';
 import { Result } from '../types';
 
 export const useResults = (results: Result[]) => {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredResults = searchTerm.trim() === '' 
-    ? results
-    : results.filter(result => 
-        result.numeroAbo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        result.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        result.codePostal.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-
+  // This hook is now simpler since we removed the search functionality
+  // We just return the results directly
   return {
-    searchTerm,
-    setSearchTerm,
-    filteredResults,
+    results,
   };
 };

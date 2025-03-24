@@ -29,7 +29,7 @@ interface BotConfigPanelProps {
   removeName: (name: string) => void;
   addCode: (code: string) => void;
   removeCode: (code: string) => void;
-  updateDateRange: (from: Date | null, to: Date | null) => void;
+  updateDateRange: (from: Date | null) => void;
   resetFilters: () => void;
   addNamesFromText: (text: string) => void;
   isRunning: boolean;
@@ -99,7 +99,10 @@ const BotConfigPanel = ({
   return (
     <div className="glass-panel p-5 h-full overflow-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold">Bot Configuration</h2>
+        <div className="flex items-center">
+          <img src="/lovable-uploads/13858aa2-0799-41f7-bb36-2cde89737ec4.png" alt="Digger" className="h-8 w-8 mr-2" />
+          <h2 className="text-lg font-semibold">Bot Configuration</h2>
+        </div>
         <button
           onClick={resetFilters}
           className="secondary-button text-xs p-2 h-8 flex items-center gap-1"
@@ -177,7 +180,7 @@ const BotConfigPanel = ({
 
         <ConfigurationItem 
           label="Names" 
-          description="Add names to filter results"
+          description="Add names to filter results (comma-separated for multiple)"
         >
           <div className="flex items-center gap-2 mb-2">
             <form onSubmit={handleNameSubmit} className="flex gap-2 flex-1">
@@ -187,7 +190,7 @@ const BotConfigPanel = ({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter name..."
+                  placeholder="Enter name(s), separate with commas..."
                   className="glass-input w-full pl-9 h-9"
                   disabled={isRunning}
                 />
@@ -216,7 +219,7 @@ const BotConfigPanel = ({
               <textarea
                 value={bulkNames}
                 onChange={(e) => setBulkNames(e.target.value)}
-                placeholder="Enter multiple names, one per line..."
+                placeholder="Enter multiple names, one per line or comma-separated..."
                 className="glass-input w-full p-3 min-h-[100px]"
                 disabled={isRunning}
               />
@@ -308,65 +311,35 @@ const BotConfigPanel = ({
         </ConfigurationItem>
 
         <ConfigurationItem 
-          label="Date Range" 
-          description="Select a date or range to filter results"
+          label="Start Date" 
+          description="Select a date to filter results"
         >
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  className={`glass-input w-full h-9 px-3 flex items-center justify-between ${isRunning ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  disabled={isRunning}
-                >
-                  <div className="flex items-center">
-                    <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                    {filters.dateRange.from ? (
-                      format(filters.dateRange.from, 'PPP')
-                    ) : (
-                      <span className="text-muted-foreground">From date...</span>
-                    )}
-                  </div>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={filters.dateRange.from || undefined}
-                  onSelect={(date) => updateDateRange(date, filters.dateRange.to)}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  className={`glass-input w-full h-9 px-3 flex items-center justify-between ${isRunning ? 'opacity-70 cursor-not-allowed' : ''}`}
-                  disabled={isRunning || !filters.dateRange.from}
-                >
-                  <div className="flex items-center">
-                    <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                    {filters.dateRange.to ? (
-                      format(filters.dateRange.to, 'PPP')
-                    ) : (
-                      <span className="text-muted-foreground">To date...</span>
-                    )}
-                  </div>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-white" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={filters.dateRange.to || undefined}
-                  onSelect={(date) => updateDateRange(filters.dateRange.from, date)}
-                  disabled={(date) => !filters.dateRange.from || date < filters.dateRange.from}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className={`glass-input w-full h-9 px-3 flex items-center justify-between ${isRunning ? 'opacity-70 cursor-not-allowed' : ''}`}
+                disabled={isRunning}
+              >
+                <div className="flex items-center">
+                  <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                  {filters.dateRange.from ? (
+                    format(filters.dateRange.from, 'PPP')
+                  ) : (
+                    <span className="text-muted-foreground">Pick a date...</span>
+                  )}
+                </div>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0 bg-white" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={filters.dateRange.from || undefined}
+                onSelect={(date) => updateDateRange(date)}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
         </ConfigurationItem>
 
         <div className="pt-2">

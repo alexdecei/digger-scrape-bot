@@ -1,18 +1,39 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FilterState, BotMode } from '../types';
 
 export const useFilters = () => {
-  const [filters, setFilters] = useState<FilterState>({
-    mode: 'Statut',
-    postalCodes: [],
-    names: [],
-    codes: [],
-    dateRange: {
-      from: null,
-      to: null,
-    },
-  });
+  // Initialize filters from localStorage if available
+  const getInitialState = (): FilterState => {
+    if (typeof window !== 'undefined') {
+      const savedFilters = localStorage.getItem('digger_filters');
+      if (savedFilters) {
+        try {
+          return JSON.parse(savedFilters);
+        } catch (e) {
+          console.error('Error parsing saved filters', e);
+        }
+      }
+    }
+    
+    return {
+      mode: 'Statut',
+      postalCodes: [],
+      names: [],
+      codes: [],
+      dateRange: {
+        from: null,
+        to: null,
+      },
+    };
+  };
+
+  const [filters, setFilters] = useState<FilterState>(getInitialState);
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('digger_filters', JSON.stringify(filters));
+  }, [filters]);
 
   const updateMode = (mode: BotMode) => {
     setFilters(prev => ({ ...prev, mode }));
@@ -34,10 +55,17 @@ export const useFilters = () => {
   };
 
   const addName = (name: string) => {
-    if (!name.trim() || filters.names.includes(name.trim())) return;
+    // Handle comma-separated values
+    if (!name.trim()) return;
+    
+    const namesList = name.split(',').map(n => n.trim()).filter(n => n);
+    const newNames = namesList.filter(n => !filters.names.includes(n));
+    
+    if (newNames.length === 0) return;
+    
     setFilters(prev => ({
       ...prev,
-      names: [...prev.names, name.trim()],
+      names: [...prev.names, ...newNames],
     }));
   };
 
@@ -63,15 +91,18 @@ export const useFilters = () => {
     }));
   };
 
-  const updateDateRange = (from: Date | null, to: Date | null) => {
+  const updateDateRange = (from: Date | null) => {
     setFilters(prev => ({
       ...prev,
-      dateRange: { from, to },
+      dateRange: { 
+        from, 
+        to: null // Keep the to field in the structure but it's not used
+      },
     }));
   };
 
   const resetFilters = () => {
-    setFilters({
+    const emptyFilters = {
       mode: 'Statut',
       postalCodes: [],
       names: [],
@@ -80,15 +111,19 @@ export const useFilters = () => {
         from: null,
         to: null,
       },
-    });
+    };
+    
+    setFilters(emptyFilters);
+    localStorage.removeItem('digger_filters');
   };
 
   // Handle bulk input for names (from textarea)
   const addNamesFromText = (text: string) => {
     if (!text.trim()) return;
     
+    // Handle both newlines and commas
     const namesArray = text
-      .split('\n')
+      .split(/[\n,]/)
       .map(name => name.trim())
       .filter(name => name && !filters.names.includes(name));
     
