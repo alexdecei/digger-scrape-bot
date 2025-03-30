@@ -1,4 +1,4 @@
-
+"use client";
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -14,7 +14,7 @@ import {
   MoreHorizontal 
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { FilterState, BotMode } from '../types';
+import { FilterState, BotMode } from '..';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -34,6 +34,10 @@ interface BotConfigPanelProps {
   addNamesFromText: (text: string) => void;
   isRunning: boolean;
   toggleBot: () => void;
+  isSearching: boolean;
+  toggleSearch: () => void;
+  oktaCode: string;
+  updateOktaCode: (code: string) => void;
 }
 
 const BotConfigPanel = ({
@@ -49,7 +53,11 @@ const BotConfigPanel = ({
   resetFilters,
   addNamesFromText,
   isRunning,
-  toggleBot
+  toggleBot,
+  isSearching,
+  toggleSearch,
+  oktaCode,
+  updateOktaCode,
 }: BotConfigPanelProps) => {
   const [postalCode, setPostalCode] = useState('');
   const [code, setCode] = useState('');
@@ -106,7 +114,7 @@ const BotConfigPanel = ({
         <button
           onClick={resetFilters}
           className="secondary-button text-xs p-2 h-8 flex items-center gap-1"
-          disabled={isRunning}
+          
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Reset Filters
@@ -121,7 +129,7 @@ const BotConfigPanel = ({
           <Select 
             value={filters.mode} 
             onValueChange={(value) => updateMode(value as BotMode)}
-            disabled={isRunning}
+            
           >
             <SelectTrigger className="glass-input">
               <SelectValue placeholder="Select mode" />
@@ -147,13 +155,12 @@ const BotConfigPanel = ({
                 onChange={(e) => setPostalCode(e.target.value)}
                 placeholder="Enter postal code..."
                 className="glass-input w-full pl-9 h-9"
-                disabled={isRunning}
+                
               />
             </div>
             <button 
               type="submit" 
               className="secondary-button aspect-square p-0 w-9 flex items-center justify-center"
-              disabled={isRunning || !postalCode.trim()}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -166,7 +173,7 @@ const BotConfigPanel = ({
                 <button 
                   onClick={() => removePostalCode(pc)} 
                   className="ml-1 text-primary/70 hover:text-primary"
-                  disabled={isRunning}
+                  
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -192,13 +199,12 @@ const BotConfigPanel = ({
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter name(s), separate with commas..."
                   className="glass-input w-full pl-9 h-9"
-                  disabled={isRunning}
+                  
                 />
               </div>
               <button 
                 type="submit" 
                 className="secondary-button aspect-square p-0 w-9 flex items-center justify-center"
-                disabled={isRunning || !name.trim()}
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -208,7 +214,7 @@ const BotConfigPanel = ({
               onClick={() => setShowNamesTextarea(!showNamesTextarea)}
               className="secondary-button aspect-square p-0 w-9 flex items-center justify-center"
               title="Bulk add names"
-              disabled={isRunning}
+              
             >
               <MoreHorizontal className="h-4 w-4" />
             </button>
@@ -221,7 +227,7 @@ const BotConfigPanel = ({
                 onChange={(e) => setBulkNames(e.target.value)}
                 placeholder="Enter multiple names, one per line or comma-separated..."
                 className="glass-input w-full p-3 min-h-[100px]"
-                disabled={isRunning}
+                
               />
               <div className="flex justify-end mt-2 gap-2">
                 <button 
@@ -231,7 +237,7 @@ const BotConfigPanel = ({
                     setShowNamesTextarea(false);
                   }}
                   className="secondary-button text-xs px-3 h-7"
-                  disabled={isRunning}
+                  
                 >
                   Cancel
                 </button>
@@ -239,7 +245,6 @@ const BotConfigPanel = ({
                   type="button" 
                   onClick={handleBulkNamesSubmit}
                   className="primary-button text-xs px-3 h-7"
-                  disabled={isRunning || !bulkNames.trim()}
                 >
                   Add All Names
                 </button>
@@ -254,7 +259,7 @@ const BotConfigPanel = ({
                 <button 
                   onClick={() => removeName(n)} 
                   className="ml-1 text-primary/70 hover:text-primary"
-                  disabled={isRunning}
+                  
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -279,13 +284,12 @@ const BotConfigPanel = ({
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="Enter code..."
                 className="glass-input w-full pl-9 h-9"
-                disabled={isRunning}
+                
               />
             </div>
             <button 
               type="submit" 
               className="secondary-button aspect-square p-0 w-9 flex items-center justify-center"
-              disabled={isRunning || !code.trim()}
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -298,7 +302,7 @@ const BotConfigPanel = ({
                 <button 
                   onClick={() => removeCode(c)} 
                   className="ml-1 text-primary/70 hover:text-primary"
-                  disabled={isRunning}
+                  
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -318,7 +322,7 @@ const BotConfigPanel = ({
             <PopoverTrigger asChild>
               <button
                 className={`glass-input w-full h-9 px-3 flex items-center justify-between ${isRunning ? 'opacity-70 cursor-not-allowed' : ''}`}
-                disabled={isRunning}
+                
               >
                 <div className="flex items-center">
                   <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -342,13 +346,28 @@ const BotConfigPanel = ({
           </Popover>
         </ConfigurationItem>
 
-        <div className="pt-2">
+        <ConfigurationItem
+          label=""
+          description=""
+        >
+          <input
+            type="numeric"
+            value={oktaCode}
+            onChange={(e) => updateOktaCode(e.target.value)}
+            maxLength={6}
+            className="w-full px-3 py-2 border rounded"
+            placeholder="Code OKTA"
+        />
+        </ConfigurationItem>
+
+        <div className="pt-2 space-y-3">
+          {/* Bouton START / STOP BOT */}
           <button 
             onClick={toggleBot}
             className={`w-full h-12 rounded-lg flex items-center justify-center transition-all font-medium
-                      ${isRunning 
-                        ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' 
-                        : 'primary-button'}`}
+                        ${isRunning 
+                          ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' 
+                          : 'primary-button'}`}
           >
             {isRunning ? (
               <>
@@ -362,15 +381,39 @@ const BotConfigPanel = ({
               </>
             )}
           </button>
-          
-          <div className={`flex items-center justify-center mt-3 text-xs
-                         ${isRunning 
-                          ? 'text-green-600' 
-                          : 'text-muted-foreground'}`}>
-            <div className={`w-2 h-2 rounded-full mr-2 
+
+          {/* Nouveau bouton "Rechercher" */}
+          {isRunning && (
+            <button
+              onClick={toggleSearch}
+              className={`w-full h-10 rounded-lg flex items-center justify-center transition-all text-sm font-medium
+                          ${isSearching 
+                            ? 'bg-muted text-muted-foreground hover:bg-muted/80' 
+                            : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+            >
+              {isSearching ? (
+                <>
+                  <StopCircle className="h-4 w-4 mr-2" />
+                  Arrêter la recherche
+                </>
+              ) : (
+                <>
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Rechercher
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Statut */}
+          <div className={`flex items-center justify-center mt-2 text-xs
                           ${isRunning 
-                           ? 'bg-green-500 animate-pulse' 
-                           : 'bg-muted-foreground'}`} />
+                            ? 'text-green-600' 
+                            : 'text-muted-foreground'}`}>
+            <div className={`w-2 h-2 rounded-full mr-2 
+                            ${isRunning 
+                              ? 'bg-green-500 animate-pulse' 
+                              : 'bg-muted-foreground'}`} />
             {isRunning ? 'Bot is running' : 'Bot is stopped'}
           </div>
         </div>

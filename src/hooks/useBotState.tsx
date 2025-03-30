@@ -1,110 +1,65 @@
-
 import { useState, useEffect } from 'react';
-import { BotState, Result } from '../types';
+import { BotState, Result } from '..';
 import { toast } from '@/hooks/use-toast';
+import { apiService } from '@/utils/apiService';
 
-// Pre-populated example results
-const exampleResults: Result[] = [
-  {
-    id: 'example-1',
-    numeroAbo: 'A123456',
-    prenom: 'Jean',
-    codePostal: '75001',
-    selected: false,
-  },
-  {
-    id: 'example-2',
-    numeroAbo: 'A789012',
-    prenom: 'Marie',
-    codePostal: '69001',
-    selected: false,
-  },
-  {
-    id: 'example-3',
-    numeroAbo: 'A345678',
-    prenom: 'Thomas',
-    codePostal: '33000',
-    selected: false,
-  },
-  {
-    id: 'example-4',
-    numeroAbo: 'A901234',
-    prenom: 'Sophie',
-    codePostal: '44000',
-    selected: false,
-  },
-  {
-    id: 'example-5',
-    numeroAbo: 'A567890',
-    prenom: 'Lucas',
-    codePostal: '13001',
-    selected: false,
-  }
-];
 
-export const useBotState = () => {
-  // Init from localStorage or use examples
-  const getInitialState = (): BotState => {
-    if (typeof window !== 'undefined') {
-      const savedState = localStorage.getItem('digger_bot_state');
-      if (savedState) {
-        try {
-          return JSON.parse(savedState);
-        } catch (e) {
-          console.error('Error parsing saved bot state', e);
-        }
+const getInitialState = (): BotState => {
+  if (typeof window !== 'undefined') {
+    const savedState = localStorage.getItem('digger_bot_state');
+    if (savedState) {
+      try {
+        return JSON.parse(savedState);
+      } catch (e) {
+        console.error('Error parsing saved bot state', e);
       }
     }
-    
-    return {
-      isRunning: false,
-      isConnected: false,
-      results: exampleResults, // Pre-populate with examples
-    };
-  };
+  }
 
+  return {
+    isRunning: false,
+    isConnected: false,
+    results: [],
+    oktaCode: '',
+  };
+};
+
+
+export const useBotState = () => {
   const [botState, setBotState] = useState<BotState>(getInitialState);
 
-  // Save state to localStorage when it changes
+  const updateOktaCode = (code: string) => {
+    setBotState(prev => ({ ...prev, oktaCode: code }));
+  };
+
   useEffect(() => {
     localStorage.setItem('digger_bot_state', JSON.stringify(botState));
   }, [botState]);
 
-  // Toggle bot running state
+  useEffect(() => {
+    apiService.getBotState()
+      .then(({ running }) => {
+        setBotState(prev => ({ ...prev, isRunning: running }));
+      })
+      .catch(err => console.error('[Bot Sync] Failed:', err));
+  }, []);
+
+
+
   const toggleBot = async () => {
     try {
       if (botState.isRunning) {
-        // Stop the bot
+        await apiService.setBotState(false);
         setBotState(prev => ({ ...prev, isRunning: false }));
-        toast({
-          title: "Bot Stopped",
-          description: "The scraping process has been stopped.",
-        });
+        toast({ title: "Bot Stopped", description: "The scraping process has been stopped." });
       } else {
-        // Start the bot
-        // Here we would make the API call to start the bot
-        // For now, we'll simulate the connection
-        toast({
-          title: "Connecting...",
-          description: "Initializing the browser session...",
-        });
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        setBotState(prev => ({ 
-          ...prev, 
-          isRunning: true, 
-          isConnected: true 
-        }));
-        
-        toast({
-          title: "Bot Started",
-          description: "The scraping process has begun.",
-        });
-        
-        // Simulate receiving results (for demo purposes)
-        simulateResults();
+        toast({ title: "Connecting...", description: "Initializing the browser session..." });
+
+  
+        await apiService.setBotState(true, botState.oktaCode);
+        setBotState(prev => ({ ...prev, isRunning: true, isConnected: true }));
+  
+        toast({ title: "Bot Started", description: "The scraping process has begun." });
       }
     } catch (error) {
       console.error('Error toggling bot:', error);
@@ -112,21 +67,24 @@ export const useBotState = () => {
         title: "Error",
         description: "Failed to control the bot. Please try again.",
         variant: "destructive",
-      });
+      });    
+      
+      // 👇 Important : on vérifie le vrai état backend si une erreur survient
+      const res = await apiService.getBotState();
+      setBotState(prev => ({ ...prev, isRunning: res.running }));
+      
     }
   };
 
-  // Select/deselect a result
   const toggleResultSelection = (id: string) => {
     setBotState(prev => ({
       ...prev,
-      results: prev.results.map(result => 
+      results: prev.results.map(result =>
         result.id === id ? { ...result, selected: !result.selected } : result
       ),
     }));
   };
 
-  // Select all results
   const selectAllResults = (selected: boolean) => {
     setBotState(prev => ({
       ...prev,
@@ -134,7 +92,6 @@ export const useBotState = () => {
     }));
   };
 
-  // Clear all results
   const clearResults = () => {
     setBotState(prev => ({
       ...prev,
@@ -142,14 +99,10 @@ export const useBotState = () => {
     }));
   };
 
-  // Copy selected results to clipboard
   const copySelectedResults = () => {
     const selectedResults = botState.results.filter(r => r.selected);
     if (selectedResults.length === 0) {
-      toast({
-        title: "No Selection",
-        description: "Please select at least one result to copy.",
-      });
+      toast({ title: "No Selection", description: "Please select at least one result to copy." });
       return;
     }
 
@@ -157,29 +110,27 @@ export const useBotState = () => {
       .map(r => `${r.numeroAbo}, ${r.prenom}, ${r.codePostal}`)
       .join('\n');
 
-    navigator.clipboard.writeText(text).then(() => {
-      toast({
-        title: "Copied to Clipboard",
-        description: `${selectedResults.length} result(s) copied successfully.`,
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        toast({
+          title: "Copied to Clipboard",
+          description: `${selectedResults.length} result(s) copied successfully.`,
+        });
+      })
+      .catch(err => {
+        console.error('Failed to copy:', err);
+        toast({
+          title: "Copy Failed",
+          description: "Could not copy to clipboard. Please try again.",
+          variant: "destructive",
+        });
       });
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-      toast({
-        title: "Copy Failed",
-        description: "Could not copy to clipboard. Please try again.",
-        variant: "destructive",
-      });
-    });
   };
 
-  // Export selected results as txt file
   const exportSelectedResults = () => {
     const selectedResults = botState.results.filter(r => r.selected);
     if (selectedResults.length === 0) {
-      toast({
-        title: "No Selection",
-        description: "Please select at least one result to export.",
-      });
+      toast({ title: "No Selection", description: "Please select at least one result to export." });
       return;
     }
 
@@ -203,40 +154,6 @@ export const useBotState = () => {
     });
   };
 
-  // Simulated results for demo purposes
-  const simulateResults = () => {
-    const delay = 2000; // Initial delay
-    const postalCodes = ['75001', '75002', '75003', '69001', '69002', '33000', '44000'];
-    const firstNames = ['Jean', 'Marie', 'Pierre', 'Sophie', 'Thomas', 'Camille', 'Lucas', 'Emma', 'Louis'];
-    
-    const generateResult = (index: number): Result => ({
-      id: `result-${Date.now()}-${index}`,
-      numeroAbo: `A${Math.floor(100000 + Math.random() * 900000)}`,
-      prenom: firstNames[Math.floor(Math.random() * firstNames.length)],
-      codePostal: postalCodes[Math.floor(Math.random() * postalCodes.length)],
-      selected: false,
-    });
-
-    // Simulate adding results over time
-    const addResult = (index: number) => {
-      if (!botState.isRunning) return; // Stop if bot is no longer running
-      
-      setBotState(prev => ({
-        ...prev,
-        results: [...prev.results, generateResult(index)]
-      }));
-
-      // Continue adding more results with random delays if still running
-      if (index < 20 && botState.isRunning) {
-        const nextDelay = 1000 + Math.random() * 3000;
-        setTimeout(() => addResult(index + 1), nextDelay);
-      }
-    };
-
-    // Start adding results after initial delay
-    setTimeout(() => addResult(0), delay);
-  };
-
   return {
     botState,
     toggleBot,
@@ -245,5 +162,7 @@ export const useBotState = () => {
     clearResults,
     copySelectedResults,
     exportSelectedResults,
+    updateOktaCode,
   };
 };
+

@@ -1,4 +1,3 @@
-
 import { ReactNode } from 'react';
 
 interface LayoutProps {
@@ -12,7 +11,7 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="container flex h-14 items-center">
           <div className="flex items-center space-x-2">
             <svg
-              xmlns="http://www.w3.org/2000/svg"
+              xmlns="/lovable-uploads/13858aa2-0799-41f7-bb36-2cde89737ec4.png"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"

@@ -1,36 +1,34 @@
+"use client";
 
 import { useState } from 'react';
 import { CheckSquare, Square, Copy, Download } from 'lucide-react';
-import { Result } from '../types';
+import { useResults } from '@/hooks/useResults';
 
 interface ResultsPanelProps {
-  results: Result[];
-  filteredResults: Result[];
-  toggleResultSelection: (id: string) => void;
-  selectAllResults: (selected: boolean) => void;
-  copySelectedResults: () => void;
-  exportSelectedResults: () => void;
   isRunning: boolean;
 }
 
-const ResultsPanel = ({
-  results,
-  filteredResults,
-  toggleResultSelection,
-  selectAllResults,
-  copySelectedResults,
-  exportSelectedResults,
-  isRunning,
-}: ResultsPanelProps) => {
+const ResultsPanel = ({ isRunning }: ResultsPanelProps) => {
+  const {
+    results,
+    toggleResultSelection,
+    selectAllResults,
+    copySelectedResults,
+    exportSelectedResults,
+  } = useResults();
+
   const [selectAll, setSelectAll] = useState(false);
 
   const handleSelectAll = () => {
-    const newSelectAll = !selectAll;
-    setSelectAll(newSelectAll);
-    selectAllResults(newSelectAll);
+    const newValue = !selectAll;
+    setSelectAll(newValue);
+    selectAllResults(newValue);
   };
 
   const selectedCount = results.filter(r => r.selected).length;
+  const uniqueResults = Array.from(new Map(
+    results.map(r => [r.numeroAbo, r])
+  ).values());
 
   return (
     <div className="glass-panel p-5 h-full flex flex-col overflow-hidden">
@@ -68,7 +66,7 @@ const ResultsPanel = ({
               </button>
             </div>
             
-            <div className="overflow-y-auto flex-1 -mr-2 pr-2">
+            <div className="flex-1 overflow-y-auto max-h-[60vh] -mr-2 pr-2">
               <table className="w-full text-sm">
                 <thead className="text-xs text-muted-foreground">
                   <tr>
@@ -80,7 +78,7 @@ const ResultsPanel = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {results.map((result) => (
+                  {uniqueResults.map((result) => (
                     <tr 
                       key={result.id} 
                       className="border-b border-border/50 last:border-0 hover:bg-accent/30 transition-colors"
