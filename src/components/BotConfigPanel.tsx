@@ -32,8 +32,9 @@ interface BotConfigPanelProps {
   updateDateRange: (from: Date | null) => void;
   resetFilters: () => void;
   addNamesFromText: (text: string) => void;
-  isRunning: boolean;
-  toggleBot: () => void;
+  isConnected: boolean;
+  connectBot: () => void;
+  disConnectBot: () => void;
   isSearching: boolean;
   toggleSearch: () => void;
   oktaCode: string;
@@ -52,8 +53,9 @@ const BotConfigPanel = ({
   updateDateRange,
   resetFilters,
   addNamesFromText,
-  isRunning,
-  toggleBot,
+  isConnected: isConnected,
+  connectBot,
+  disConnectBot,
   isSearching,
   toggleSearch,
   oktaCode,
@@ -321,7 +323,7 @@ const BotConfigPanel = ({
           <Popover>
             <PopoverTrigger asChild>
               <button
-                className={`glass-input w-full h-9 px-3 flex items-center justify-between ${isRunning ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`glass-input w-full h-9 px-3 flex items-center justify-between ${isConnected ? 'opacity-70 cursor-not-allowed' : ''}`}
                 
               >
                 <div className="flex items-center">
@@ -362,28 +364,33 @@ const BotConfigPanel = ({
 
         <div className="pt-2 space-y-3">
           {/* Bouton START / STOP BOT */}
-          <button 
-            onClick={toggleBot}
+            {isConnected ? (
+              <button 
+              onClick={disConnectBot}
+              className={`w-full h-12 rounded-lg flex items-center justify-center transition-all font-medium
+                          ${isConnected 
+                            ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' 
+                            : 'primary-button'}`}
+            >
+                <StopCircle className="h-5 w-5 mr-2" />
+                Stop Bot
+                </button>
+            ) : (
+              <button 
+            onClick={connectBot}
             className={`w-full h-12 rounded-lg flex items-center justify-center transition-all font-medium
-                        ${isRunning 
+                        ${isConnected 
                           ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' 
                           : 'primary-button'}`}
           >
-            {isRunning ? (
-              <>
-                <StopCircle className="h-5 w-5 mr-2" />
-                Stop Bot
-              </>
-            ) : (
-              <>
                 <PlayCircle className="h-5 w-5 mr-2" />
                 Start Bot
-              </>
+                </button>
             )}
-          </button>
-
+          
+          
           {/* Nouveau bouton "Rechercher" */}
-          {isRunning && (
+          {isConnected && (
             <button
               onClick={toggleSearch}
               className={`w-full h-10 rounded-lg flex items-center justify-center transition-all text-sm font-medium
@@ -407,14 +414,14 @@ const BotConfigPanel = ({
 
           {/* Statut */}
           <div className={`flex items-center justify-center mt-2 text-xs
-                          ${isRunning 
+                          ${isConnected 
                             ? 'text-green-600' 
                             : 'text-muted-foreground'}`}>
             <div className={`w-2 h-2 rounded-full mr-2 
-                            ${isRunning 
+                            ${isConnected 
                               ? 'bg-green-500 animate-pulse' 
                               : 'bg-muted-foreground'}`} />
-            {isRunning ? 'Bot is running' : 'Bot is stopped'}
+            {isConnected ? 'Bot is running' : 'Bot is stopped'}
           </div>
         </div>
       </div>

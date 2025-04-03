@@ -21,14 +21,8 @@ export interface Result {
 }
 
 export interface BotState {
-  isRunning: boolean;
   isConnected: boolean;
+  isSearching: boolean;
   results: Result[];
   oktaCode: string;
-}
-
-export interface BotState {
-  isRunning: boolean;
-  isConnected: boolean;
-  results: Result[];
 }

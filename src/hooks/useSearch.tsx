@@ -14,7 +14,7 @@ export const useSearch = () => {
         try {
           return JSON.parse(savedFilters);
         } catch (e) {
-          console.error('Error parsing saved filters', e);
+          console.log('❌ Error parsing saved filters', e);
         }
       }
     }
@@ -51,6 +51,8 @@ export const useSearch = () => {
     const rawDate = filters.dateRange.from;
     const parsedDate = typeof rawDate === 'string' ? new Date(rawDate) : rawDate;
 
+    console.log("ℹ️ lancement useSearch")
+
     if (!parsedDate || isNaN(parsedDate.getTime())) {
       toast({
         title: "Date invalide",
@@ -65,9 +67,10 @@ export const useSearch = () => {
     const controller = new AbortController();
     abortRef.current = controller;
     
-    setIsSearching(true);
 
     try {
+      setIsSearching(true);
+      console.log("ℹ️ lancement api search")
       const response = await apiService.search({
         mode: filters.mode,
         postalCodes: filters.postalCodes,
@@ -85,6 +88,7 @@ export const useSearch = () => {
         description: "The scraping process was triggered successfully.",
       });
     } catch (error) {
+      
       console.error('Error triggering search:', error);
       toast({
         title: "Search Error",

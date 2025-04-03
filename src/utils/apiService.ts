@@ -6,17 +6,22 @@ export const apiService = {
     return res.json();
   },
 
-  setBotState: async (running: boolean, oktaCode?: string) => {
+  setBotState: async (connect: boolean, oktaCode?: string) => {
     const res = await fetch(`${BASE_URL}/botState`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        action: running ? 'start' : 'stop',
+        action: connect ? 'start' : 'stop',
         oktaCode,
       }),
     });
-    return res.json();
+  
+    const status = await res.json();
+    return status;
   },
+  
 
   search: async (filters: any, signal?: AbortSignal) => {
     const res = await fetch(`${BASE_URL}/search`, {

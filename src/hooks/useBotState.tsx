@@ -3,7 +3,6 @@ import { BotState, Result } from '..';
 import { toast } from '@/hooks/use-toast';
 import { apiService } from '@/utils/apiService';
 
-
 const getInitialState = (): BotState => {
   if (typeof window !== 'undefined') {
     const savedState = localStorage.getItem('digger_bot_state');
@@ -17,67 +16,80 @@ const getInitialState = (): BotState => {
   }
 
   return {
-    isRunning: false,
     isConnected: false,
+    isSearching: false,
     results: [],
     oktaCode: '',
   };
 };
 
-
 export const useBotState = () => {
-  const [botState, setBotState] = useState<BotState>(getInitialState);
+  const [botState, updateLocalBotState] = useState<BotState>(getInitialState);
 
   const updateOktaCode = (code: string) => {
-    setBotState(prev => ({ ...prev, oktaCode: code }));
+    updateLocalBotState(prev => ({ ...prev, oktaCode: code }));
   };
 
   useEffect(() => {
     localStorage.setItem('digger_bot_state', JSON.stringify(botState));
   }, [botState]);
 
+  // Polling de l’état réel du bot depuis le backend toutes les secondes
   useEffect(() => {
-    apiService.getBotState()
-      .then(({ running }) => {
-        setBotState(prev => ({ ...prev, isRunning: running }));
-      })
-      .catch(err => console.error('[Bot Sync] Failed:', err));
+    const poll = async () => {
+      try {
+        const { status } = await apiService.getBotState();
+        updateLocalBotState(prev => {
+          if (
+            prev.isConnected !== status.isConnected ||
+            prev.isSearching !== status.isSearching
+          ) {
+            return { ...prev, ...status };
+          }
+          return prev; // Pas de changement, on évite le re-rending inutule
+        });
+      } catch (err) {
+        console.error('[Polling] Failed:', err);
+      }
+    };
+  
+    const interval = setInterval(poll, 1000);
+    return () => clearInterval(interval);
   }, []);
 
-
-
-  const toggleBot = async () => {
+  const connectBot = async () => {
     try {
-      if (botState.isRunning) {
-        await apiService.setBotState(false);
-        setBotState(prev => ({ ...prev, isRunning: false }));
-        toast({ title: "Bot Stopped", description: "The scraping process has been stopped." });
-      } else {
-        toast({ title: "Connecting...", description: "Initializing the browser session..." });
-
-  
-        await apiService.setBotState(true, botState.oktaCode);
-        setBotState(prev => ({ ...prev, isRunning: true, isConnected: true }));
-  
-        toast({ title: "Bot Started", description: "The scraping process has begun." });
-      }
+      const status = await apiService.setBotState(true, botState.oktaCode);
+      console.log("🟢 Bot connected: " + status.status.isConnected);
+      console.log("🟢 Bot searching: " + status.status.isSearching);
+      updateLocalBotState(prev => ({
+        ...prev,
+        isConnected: status.status.isConnected,
+        isSearching: status.status.isSearching,
+      }));
     } catch (error) {
-      console.error('Error toggling bot:', error);
-      toast({
-        title: "Error",
-        description: "Failed to control the bot. Please try again.",
-        variant: "destructive",
-      });    
-      
-      // 👇 Important : on vérifie le vrai état backend si une erreur survient
-      const res = await apiService.getBotState();
-      setBotState(prev => ({ ...prev, isRunning: res.running }));
-      
+      console.log("🔴 End of Bot connexion: ", error);
     }
   };
 
+  const disconnectBot = async () => {
+    try {
+      const status = await apiService.setBotState(false);
+      console.log("🔴 Bot connected: " + status.status.isConnected);
+      console.log("🔴 Bot searching: " + status.status.isSearching);
+      updateLocalBotState(prev => ({
+        ...prev,
+        isConnected: status.status.isConnected,
+        isSearching: status.status.isSearching,
+      }));
+    } catch (error) {
+      console.log('🔴 End of Bot connexion: ', error);
+    }
+  };
+
+
   const toggleResultSelection = (id: string) => {
-    setBotState(prev => ({
+    updateLocalBotState(prev => ({
       ...prev,
       results: prev.results.map(result =>
         result.id === id ? { ...result, selected: !result.selected } : result
@@ -86,14 +98,14 @@ export const useBotState = () => {
   };
 
   const selectAllResults = (selected: boolean) => {
-    setBotState(prev => ({
+    updateLocalBotState(prev => ({
       ...prev,
       results: prev.results.map(result => ({ ...result, selected })),
     }));
   };
 
   const clearResults = () => {
-    setBotState(prev => ({
+    updateLocalBotState(prev => ({
       ...prev,
       results: [],
     }));
@@ -156,7 +168,8 @@ export const useBotState = () => {
 
   return {
     botState,
-    toggleBot,
+    disConnectBot: disconnectBot,
+    connectBot,
     toggleResultSelection,
     selectAllResults,
     clearResults,

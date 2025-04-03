@@ -1,39 +1,50 @@
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
-
-
 import { parse } from 'date-fns';
 
 let browser: Browser | null = null;
 let mainPage: Page | null = null;
-let detailPage: Page | null = null;
-let isRunning = false;
+let searchPage: Page | null = null;
+let isConnected = false;
+let isSearching = false;
 let context: BrowserContext | null = null;
 let resultCache: any[] = [];
 
+
+//=======================================================================
+//============================CONNEXION FUNCTIONS========================
+//=======================================================================
+
+
 export async function startBot(oktaCode?: string) {
-  if (browser) return;
-  if (isRunning) return;
+  try {
+    browser = await chromium.launch({ headless: false });
+    context = await browser.newContext();
+    mainPage = await context.newPage();
+    
+    isConnected = true;
+    isSearching = false;
 
-  browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext();
-  mainPage = await context.newPage();
+    attachLifecycleHooks();
 
-  await mainPage.goto('https://cgaweb-drom.canal-plus.com/server/servlet/Home');
-  isRunning = true;
+    await mainPage.goto('https://cgaweb-drom.canal-plus.com/server/servlet/Home');
 
-  browser.on('disconnected', () => {
-    isRunning = false;
-    browser = null;
-    mainPage = null;
-    detailPage = null;
-  });
+    
 
-  await loginWithOkta(oktaCode).catch((e) => console.error('[Login OKTA] Failed:', e));
+    await loginWithOkta(oktaCode);
 
-  detailPage = await context.newPage();
-  await mainPage.goto('https://cgaweb-drom.canal-plus.com/server/selectsubscriber.do');
-  await mainPage.bringToFront();
-  
+    const searchPagePromise = mainPage.waitForEvent('popup');
+    await mainPage.frameLocator('frame[name="titleFrame"]').getByText('Sélection Abonné').click();
+    searchPage = await searchPagePromise;
+
+    if (!browser || !mainPage || !searchPage || !context) {
+      throw new Error("Bot startup failed: context incomplete");
+    }
+
+    await logBotState(false);
+  } catch (err) {
+    cleanBotState();
+    throw err;
+  }
 }
 
 
@@ -43,44 +54,30 @@ export async function stopBot() {
     await browser.close(); // ← S'ASSURER que cette ligne est atteinte
     browser = null;
     mainPage = null;
-    detailPage = null;
-    isRunning = false;
+    searchPage = null;
+    isConnected = false;
+    isSearching = false;
+    resultCache = [];
   }
-}
-
-export async function isBotRunning() {
-  return isRunning;
 }
 
 
 
 export async function loginWithOkta(oktaCode: string) {
-  if (!mainPage) throw new Error("Page not initialized");
-
-  // 1. ID & pass
   await mainPage.fill('#cuser', 'VAD-DCY2');
   await mainPage.fill('#pass', 'Canal974**y');
-  await mainPage.click('input[type="submit"][name="login"]');
-
-  // 2. Sélection du facteur
-  await mainPage.waitForSelector('input[name="factorId"][value="ostd2pwbw7wBSj9q5417"]');
-  await mainPage.check('input[name="factorId"][value="ostd2pwbw7wBSj9q5417"]');
-
-  // 3. Valider
-  await mainPage.click('input[name="sendChallenge"]');
-
-  // 4. Entrer le code
-  await mainPage.fill('#passCode', "044345");
-
-  // 5. Valider
-  await mainPage.click('input[name="verifyChallenge"]');
-
-  
+  await mainPage.getByRole('button', { name: 'Login' }).click();
+  await mainPage.getByRole('radio').check();
+  await mainPage.getByRole('button', { name: 'Valider' }).click();
+  await mainPage.fill('#passCode', oktaCode);
+  //await mainPage.getByRole('button', { name: 'Valider' }).click();
 }
 
 
 
-//------------------------------------------------------------------------
+//=======================================================================
+//============================SEARCH FUNCTIONS===========================
+//=======================================================================
 
 
 
@@ -92,45 +89,37 @@ export async function performSearch(params: {
   postalCodes: string[];
   date: string;
 }) {
-
-  /*
-  if (!mainPage) throw new Error('Bot not initialized');
-
-  const searchUrl = 'https://cgaweb-drom.canal-plus.com/server/selectsubscriber.do';
-
-  if (mainPage.url() !== searchUrl) {
-    console.log('[BOT] Redirection vers page de recherche...');
-    await mainPage.goto(searchUrl, { waitUntil: 'domcontentloaded' });
-  }
-    */
-  console.log("lancement performsearch sur : ")
-  console.log('[Search Params]', JSON.stringify(params, null, 2));
+  console.log("ℹ️ performSearch");
+  await logBotState(false);
 
   resultCache = [];
   const dateMin = new Date(params.date);
 
+  isSearching = true;
   for (const codePostal of params.postalCodes) {
     for (const prenom of params.names) {
-      await runSingleSearch(prenom, codePostal, params.codes, dateMin, params.mode);
+      try {
+        await runSingleSearch(prenom, codePostal, params.codes, dateMin, params.mode);
+      } catch (error) {
+        console.log("❌ erreur sur", prenom);
+        console.log(error);
+      }
     }
   }
+  isSearching = false;
 }
 
 async function runSingleSearch(prenom: string, codePostal: string, codes: string[], dateMin: Date, mode: string) {
-  await mainPage!.bringToFront();
+  if (!searchPage) throw new Error("Search page not initialized");
 
-  await mainPage!.fill('input[name="cpostal"]', codePostal);
-  await mainPage!.fill('input[name="prenom"]', '%'+prenom);
-  await mainPage!.selectOption('select[name="cgroupe"]', { label: 'INTERNET' });
-  await mainPage!.click('input[name="search"]');
+  await searchPage.fill('input[name="cpostal"]', codePostal);
+  await searchPage.fill('input[name="prenom"]', `%${prenom}`);
+  await searchPage.selectOption('select[name="cgroupe"]', { label: 'INTERNET' });
+  await searchPage.getByRole('button', { name: 'Rechercher' }).click();
 
-  const alert = await mainPage!.waitForEvent('dialog', { timeout: 1000 }).catch(() => null);
-  if (alert) {
-    await alert.accept();
-    return;
-  }
-
-  await scanResultTable(codes, dateMin, mode);
+  const alert = await searchPage.waitForEvent('dialog', { timeout: 1000 }).catch(() => null);
+  if (alert) await alert.accept();
+  else await scanResultTable(codes, dateMin, mode);
 }
 
 async function scanResultTable(codes: string[], dateMin: Date, mode: string) {
@@ -141,115 +130,80 @@ async function scanResultTable(codes: string[], dateMin: Date, mode: string) {
     while (true) {
       const rowClass = ligne % 2 === 0 ? '.left_blanc' : '.left_grisclair';
       const baseSelector = `${rowClass}:nth-child(${ligne}) > td:nth-child`;
-
-      const exists = await mainPage!.$(`${baseSelector}(1)`);
+      const exists = await searchPage?.$(`${baseSelector}(1)`);
       if (!exists) break;
 
-      const numeroAbo = await mainPage!.textContent(`${baseSelector}(1)`);
-      const codeAction = await mainPage!.textContent(`${baseSelector}(10)`);
-      
+      const numeroAbo = await searchPage?.textContent(`${baseSelector}(1)`);
+      const codeAction = await searchPage?.textContent(`${baseSelector}(10)`);
 
-      //verification a refaire : on vérifirae juste si un des mode est valide
-      if ((!codeAction && mode=="Status") || (codes.includes(codeAction) && mode=="Annulation")) 
-        {
-        console.log(numeroAbo)
-        const isValid = await checkDetails(baseSelector, dateMin, codes, mode);
-        //const isValid = true
+      if ((mode === "Status" && !codeAction) || (mode === "Annulation" && codes.includes(codeAction))) {
+        const isValid = await checkDetails(numeroAbo || '', dateMin, codes, mode, ligne);
         if (isValid) {
-          console.log("trouvé : "+numeroAbo)
-          const codePostal = await mainPage!.textContent(`${baseSelector}(6)`);
-          const prenomAbo = await mainPage!.textContent(`${baseSelector}(4)`);
+          const codePostal = await mainPage?.textContent(`${baseSelector}(6)`);
+          const prenomAbo = await mainPage?.textContent(`${baseSelector}(4)`);
 
-          const result = {
+          resultCache.push({
             numeroAbo: numeroAbo?.trim() ?? '',
             codePostal: codePostal?.trim() ?? '',
             prenom: prenomAbo?.trim() ?? '',
-          };
-
-          resultCache.push(result);
+          });
         }
       }
-
       ligne++;
     }
 
     pageNum++;
-    const nextPage = await mainPage!.$(`a[href='javascript:pDisplaysubscriber(${pageNum});']`);
+    const nextPage = await mainPage?.$(`a[href='javascript:pDisplaysubscriber(${pageNum});']`);
     if (!nextPage) break;
     await nextPage.click();
   }
 }
 
-async function checkDetails(baseSelector: string, dateMin: Date, codes: string[], mode : string): Promise<boolean> {
-  
+async function checkDetails(numeroAbo: string, dateMin: Date, codes: string[], mode: string, ligne: number): Promise<boolean> {
+  if (!searchPage || !mainPage) return false;
 
-  try {
-    const index = 1; // ou autre index selon le résultat ciblé
-    const scriptToRun = await mainPage.$eval(
-      `${baseSelector}(${index}) > a`,
-      (el: HTMLAnchorElement) => el.getAttribute('href')
-    );
-    
-    if (!scriptToRun || !scriptToRun.startsWith('javascript:')) {
-      console.error('[BOT] Lien JS introuvable ou incorrect');
-      return;
-    }
-    
-    // Exécuter le script JS manuellement dans le contexte de la page
-    await mainPage.evaluate((code) => {
-      // eslint-disable-next-line no-eval
-      eval(code.replace(/^javascript:/, ''));
-    }, scriptToRun);
-    
-    // Attendre un élément clé qui prouve que le "détail" s'est affiché
-    await mainPage.waitForSelector('#datcre'); // ← remplace par le bon sélecteur
-  }
-  catch(error) {
-    console.log(error);
-  }
+  console.log("ℹ️ lancement checkDetails pour", numeroAbo);
 
-  switch(mode) { 
-    case "Statut": { 
+  await searchPage.locator(`table tr:nth-child(${ligne}) td:first-child a`).click();
+
+  switch (mode) {
+    case "Statut": {
       try {
-        const frame = detailPage.frame({ name: 'content' });
-        if (!frame) return false;
-    
-        await frame.waitForSelector('#datcre', { timeout: 2000 });
-    
-        const codeStatut = await frame.textContent('#cfull');
-        const distributeur = await frame.textContent('#numdist');
-        const dateStr = await frame.textContent('#datcre');
-    
+        const codeStatut = await mainPage.textContent('#cfull');
+        const distributeur = await mainPage.textContent('#numdist');
+        const dateStr = await mainPage.textContent('#datcre');
+
         if (!codeStatut || !codes.includes(codeStatut.trim())) return false;
         if (distributeur?.trim() === '1314') return false;
-    
-        const date = parse(dateStr?.trim() ?? '', 'dd/MM/yyyy', new Date());
-        return date > dateMin;
-      } catch {
-        return false;
-      } finally {
-        await mainPage.bringToFront();
-      }
-      
-    } 
-    case "Annulation": { 
-      try {
-        const frame = detailPage.frame({ name: 'content' });
-        if (!frame) return false;
-    
-        await frame.waitForSelector('#lannul', { timeout: 2000 });
-        const dateStr = await frame.textContent('#lannul');
-    
-        const date = parse(dateStr?.trim() ?? '', 'dd/MM/yyyy', new Date());
-        return date > dateMin;
-      } catch {
-        return false;
-      } finally {
-        await mainPage.bringToFront();
-      }
-      
-    }
 
+        const date = parse(dateStr?.trim() ?? '', 'dd/MM/yyyy', new Date());
+        return date > dateMin;
+      } catch {
+        return false;
+      } finally {
+        await mainPage.bringToFront();
+      }
+    }
+    case "Annulation": {
+      try {
+        const rightFrame = await mainPage.frame({ name: '_right' });
+        if (!rightFrame) return false;
+        await rightFrame.waitForSelector('#lannul');
+        const dateStr = await rightFrame.textContent('#lannul');
+        const match = dateStr?.match(/\((\d{2}\/\d{2}\/\d{4})\)/);
+        if (!match) return false;
+
+        const dateParsed = parse(match[1], 'dd/MM/yyyy', new Date());
+        return dateParsed > dateMin;
+      } catch (error) {
+        console.error("❌ Erreur Annulation", error);
+        return false;
+      } finally {
+        await mainPage.bringToFront();
+      }
+    }
+    default:
+      return false;
   }
 }
 
@@ -257,3 +211,70 @@ export async function getResults() {
   return resultCache;
 }
 
+
+
+//=======================================================================
+//============================TOOLS FUNCTIONS============================
+//=======================================================================
+
+
+function attachLifecycleHooks() {
+  if (!browser || !context) return;
+  browser.on('disconnected', cleanBotState);
+  context.on('page', (page) => {
+    page.on('close', cleanBotState);
+  });
+}
+
+function cleanBotState() {
+  console.log("💀💀💀💀");
+  isConnected = false;
+  isSearching = false;
+  browser = null;
+  mainPage = null;
+  searchPage = null;
+  context = null;
+}
+
+export async function getRealBotStatus() {
+  return {
+    isOpen: !!browser && !browser.isConnected?.() === false,
+    isConnected: isConnected,
+    isSearching: isSearching,
+  };
+}
+
+export async function logBotState(details: boolean) {
+  console.log('ℹ️🧠 ÉTAT ACTUEL DU BOT');
+
+  console.log(`ℹ️🔌 isConnected: ${isConnected}`);
+  console.log(`ℹ️📦 Browser: ${browser ? '✅ Oui' : '❌ Non'}`);
+  console.log(`ℹ️🌐 Context: ${context ? '✅ Oui' : '❌ Non'}`);
+  console.log(`ℹ️📄 Main Page: ${mainPage ? await mainPage.url() : '❌ Non défini'}`);
+  console.log(`ℹ️🔍 Search Page: ${searchPage ? await searchPage.url() : '❌ Non défini'}`);
+  console.log(`ℹ️📊 ResultCache: ${resultCache.length} éléments`);
+
+  if (browser && details) {
+    const contexts = browser.contexts();
+    console.log(`ℹ️🧱 Browser contient ${contexts.length} contextes:`);
+
+    for (const [i, ctx] of contexts.entries()) {
+      const pages = ctx.pages();
+      console.log(`  🔸 Contexte ${i + 1}: ${pages.length} page(s)`);
+
+      for (const [j, page] of pages.entries()) {
+        const title = await page.title().catch(() => '???');
+        const url = page.url();
+        console.log(`    🔹 Page ${j + 1}: "${title}" [${url}]`);
+
+        const frames = page.frames();
+        console.log(`      🔳 ${frames.length} frame(s):`);
+        frames.forEach((frame, k) => {
+          console.log(`        ▫ Frame ${k + 1}: name="${frame.name()}" url="${frame.url()}"`);
+        });
+      }
+    }
+  }
+
+  console.log('---------------------------------------\n');
+}

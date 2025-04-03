@@ -33,7 +33,8 @@ export default function ClientApp() {
 
   const {
     botState,
-    toggleBot,
+    disConnectBot,
+    connectBot,
     toggleResultSelection,
     selectAllResults,
     clearResults,
@@ -47,10 +48,10 @@ export default function ClientApp() {
   };
 
   useEffect(() => {
-    if (!botState.isRunning) {
+    if (!botState.isConnected) {
       resetSearchState(); // ⬅️ reset la recherche quand le bot s'arrête
     }
-  }, [botState.isRunning]);
+  }, [botState.isConnected]);
 
   const toggleSearch = () => {
     if (!isSearching) {
@@ -80,8 +81,9 @@ export default function ClientApp() {
             updateDateRange={updateDateRange}
             resetFilters={resetFilters}
             addNamesFromText={addNamesFromText}
-            isRunning={botState.isRunning}
-            toggleBot={toggleBot}
+            isConnected={botState.isConnected}
+            connectBot={connectBot}
+            disConnectBot={disConnectBot}
             isSearching={isSearching}
             toggleSearch={toggleSearch}
             oktaCode={botState.oktaCode}
@@ -97,7 +99,7 @@ export default function ClientApp() {
             selectAllResults={selectAllResults}
             copySelectedResults={copySelectedResults}
             exportSelectedResults={exportSelectedResults}
-            isRunning={botState.isRunning}
+            isConnected={botState.isConnected}
           />
         </div>
       </div>

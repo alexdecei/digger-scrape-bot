@@ -1,14 +1,14 @@
 {
   "pages": {
-    "/api/botState/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/botState/route.js"
-    ],
     "/api/results/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/results/route.js"
+    ],
+    "/api/botState/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/botState/route.js"
     ],
     "/page": [
       "static/chunks/webpack.js",

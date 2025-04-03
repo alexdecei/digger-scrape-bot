@@ -5,10 +5,10 @@ import { CheckSquare, Square, Copy, Download } from 'lucide-react';
 import { useResults } from '@/hooks/useResults';
 
 interface ResultsPanelProps {
-  isRunning: boolean;
+  isConnected: boolean;
 }
 
-const ResultsPanel = ({ isRunning }: ResultsPanelProps) => {
+const ResultsPanel = ({ isConnected: isConnected }: ResultsPanelProps) => {
   const {
     results,
     toggleResultSelection,
@@ -44,7 +44,7 @@ const ResultsPanel = ({ isRunning }: ResultsPanelProps) => {
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
             <p className="mb-1">No results yet</p>
             <p className="text-sm">
-              {isRunning 
+              {isConnected 
                 ? "The bot is running. Results will appear here once found." 
                 : "Configure and start the bot to begin scraping."
               }

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const success = await performSearch(params); // Implémentation dans playwright.ts
     return NextResponse.json({ success });
   } catch (err) {
-    console.error(err);
+    console.log("❌ Echec de la recherche",err);
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });
   }
 }
