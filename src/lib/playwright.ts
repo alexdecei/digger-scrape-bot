@@ -105,6 +105,11 @@ export async function performSearch(params: {
   date: string;
 }) {
   console.log("ℹ️ performSearch");
+  if(browser == null)
+  {
+    return
+  }
+  
 
   const today = new Date();
   const cutoff = new Date("2025-05-23");
@@ -202,26 +207,15 @@ async function scanResultTable(codes: string[], dateMin: Date, mode: string) {
     if(!isSearching){return}
 
     let nextBtn = null;
-    
-    if (pageNum == 1)
-      {
-        nextBtn = await searchPage.getByRole('link').filter({ hasText: /^$/ }).first()
-      }
-    else if (pageNum < 7)
-      {
-        nextBtn = await searchPage.getByRole('link').filter({ hasText: /^$/ }).nth(1);
-      }
-    else
-      {
-        nextBtn = await searchPage.getByRole('link').filter({ hasText: /^$/ }).nth(2);
-      }
       
     pageNum++;
     console.log("ℹ️ Page suivante " +pageNum)
 
+    const pageNumStr = pageNum.toString()
+
     try {
-      await nextBtn.waitFor({ state: 'visible', timeout: 700 });
-      await nextBtn.click();
+      const nextPage = await searchPage?.$(`a[href='javascript:pDisplaysubscriber(${pageNumStr});']`);
+      await nextPage.click();
     } catch (e) {
       console.log("🎌 fin de pagination");
       break;
@@ -328,8 +322,8 @@ export async function getRealBotStatus() {
 
 async function botRefresh(){
   
-  await mainPage.reload();
-  await searchPage.reload();
+  //await mainPage.reload();
+  //await searchPage.reload();
 
   await searchPage.bringToFront();
 
@@ -342,7 +336,7 @@ export async function logBotState(details: boolean) {
   console.log(`ℹ️ ⚡ Connecté : ${isConnected ? '🟢 Oui' : '🔴 Non'}`);
   console.log('ℹ️ ⚙️ Mémoire :', process.memoryUsage().heapUsed / 1024 / 1024, 'MB');
   console.log(`ℹ️ 📊 ResultCache: ${resultCache.length} éléments`);
-
+  console.log('ℹ️ 📄 Pages:' + context.pages);
   
 
   if (browser && details) {
