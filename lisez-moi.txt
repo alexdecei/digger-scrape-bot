@@ -1,0 +1,14 @@
+# DIGGER BOT 🛠️
+
+## ⚙️ Prérequis
+- Node.js ≥ 18
+- Google Chrome/Edge installé
+
+## ▶️ Lancement
+
+1. Double-cliquez sur le fichier start.bat
+2. Une fenêtre va s'ouvrir, attendre l'installation (~1 min max)
+3. Une fois "Server running on http://localhost:3000", ouvrez un navigateur et copiez-collez l’adresse
+
+🧠 Remarques :
+- Laissez la fenêtre noire ouverte (ne pas fermer !)

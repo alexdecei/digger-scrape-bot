@@ -1,4 +1,4 @@
-// File: C:\Users\decei\OneDrive\Documents\Projets\digger-scrape-bot\src\app\page.tsx
+// File: C:\Users\decei\OneDrive\Bureau\Prod\projets\Digger2\digger-scrape-bot\src\app\page.tsx
 import * as entry from '../../../src/app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

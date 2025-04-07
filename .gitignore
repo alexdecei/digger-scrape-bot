@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 pw-recorder
+.next
 
 # Editor directories and files
 .vscode/*

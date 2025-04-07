@@ -1,4 +1,4 @@
-// File: C:\Users\decei\OneDrive\Documents\Projets\digger-scrape-bot\src\app\api\botState\route.ts
+// File: C:\Users\decei\OneDrive\Bureau\Prod\projets\Digger2\digger-scrape-bot\src\app\api\botState\route.ts
 import * as entry from '../../../../../src/app/api/botState/route.js'
 import type { NextRequest } from 'next/server.js'
 
