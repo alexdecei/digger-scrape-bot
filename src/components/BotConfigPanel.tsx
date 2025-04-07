@@ -19,6 +19,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ConfigurationItem from './ConfigurationItem';
+import { Trash } from "lucide-react";
 
 interface BotConfigPanelProps {
   filters: FilterState;
@@ -78,6 +79,15 @@ const BotConfigPanel = ({
     }
   };
 
+  const handleClearNames = () => {
+    filters.names.forEach(removeName);
+    toast({
+      title: "Liste vidée",
+      description: "Tous les noms ont été supprimés.",
+    });
+  };
+  
+
   const handleNameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
@@ -126,7 +136,7 @@ const BotConfigPanel = ({
       <div className="space-y-6">
         <ConfigurationItem 
           label="Mode" 
-          description="Select the scraping mode"
+          description="Selctionnez le mode de recherche"
         >
           <Select 
             value={filters.mode} 
@@ -144,8 +154,8 @@ const BotConfigPanel = ({
         </ConfigurationItem>
 
         <ConfigurationItem 
-          label="Postal Codes" 
-          description="Add one or more postal codes to filter results"
+          label="Code postal" 
+          description="Ajouter un seul code postal"
         >
           <form onSubmit={handlePostalCodeSubmit} className="flex gap-2 mb-2">
             <div className="relative flex-1">
@@ -155,7 +165,7 @@ const BotConfigPanel = ({
                 type="text"
                 value={postalCode}
                 onChange={(e) => setPostalCode(e.target.value)}
-                placeholder="Enter postal code..."
+                placeholder="Entrez le code postal..."
                 className="glass-input w-full pl-9 h-9"
                 
               />
@@ -188,8 +198,8 @@ const BotConfigPanel = ({
         </ConfigurationItem>
 
         <ConfigurationItem 
-          label="Names" 
-          description="Add names to filter results (comma-separated for multiple)"
+          label="Noms" 
+          description="Ajoutez les noms sans % (séparés par des virgules ou des retours à la ligne)"
         >
           <div className="flex items-center gap-2 mb-2">
             <form onSubmit={handleNameSubmit} className="flex gap-2 flex-1">
@@ -210,6 +220,13 @@ const BotConfigPanel = ({
               >
                 <Plus className="h-4 w-4" />
               </button>
+              <button 
+                type="button" 
+                onClick={handleClearNames}
+                className="secondary-button aspect-square p-0 w-9 flex items-center justify-center"
+              >
+                <Trash className="h-4 w-4 text-destructive" />
+              </button>
             </form>
             <button 
               type="button"
@@ -227,7 +244,7 @@ const BotConfigPanel = ({
               <textarea
                 value={bulkNames}
                 onChange={(e) => setBulkNames(e.target.value)}
-                placeholder="Enter multiple names, one per line or comma-separated..."
+                placeholder="Plusieurs noms, une par ligne ou séparés par virgules..."
                 className="glass-input w-full p-3 min-h-[100px]"
                 
               />

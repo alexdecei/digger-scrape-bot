@@ -6,12 +6,17 @@ import BotConfigPanel from './BotConfigPanel';
 import ResultsPanel from './ResultsPanel';
 import { useSearch } from '@/hooks/useSearch';
 import { useBotState } from '@/hooks/useBotState';
+import { setAuth } from "@/utils/authStore";
+
+type AuthUser = 'MANU' | 'YO' | null;
+
+const PASSWORD_MANU = "aze";
+const PASSWORD_YO = "azx";
 
 
-const DEMO_PASSWORD = "aze";
 
 export default function ClientApp() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser>(null); 
 
   const {
     filters,
@@ -43,9 +48,6 @@ export default function ClientApp() {
     updateOktaCode,
   } = useBotState();
 
-  const handleAuthenticate = () => {
-    setIsAuthenticated(true);
-  };
 
   useEffect(() => {
     if (!botState.isConnected) {
@@ -54,6 +56,7 @@ export default function ClientApp() {
   }, [botState.isConnected]);
 
   const toggleSearch = () => {
+    console.log("ℹ️ Bot isSearching ? " + isSearching)
     if (!isSearching) {
       startSearch();
     } else {
@@ -61,9 +64,23 @@ export default function ClientApp() {
     }
   };
 
-  if (!isAuthenticated) {
-    return <PasswordGate onAuthenticate={handleAuthenticate} correctPassword={DEMO_PASSWORD} />;
+  
+  const handleAuthenticate = (password: string): boolean => {
+    if (password === PASSWORD_MANU) {
+      setAuth('MANU');
+      setAuthUser('MANU');
+      return true;
+    } else if (password === PASSWORD_YO) {
+      setAuth('YO');
+      setAuthUser('YO');
+      return true;
+    }
+    return false;
+  };
+  if (!authUser) {
+    return <PasswordGate onAuthenticate={handleAuthenticate} />;
   }
+
 
   return (
     <div className="container py-6">

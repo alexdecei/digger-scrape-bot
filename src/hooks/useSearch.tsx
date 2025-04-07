@@ -46,12 +46,12 @@ export const useSearch = () => {
   };
 
   const startSearch = async () => {
-    console.log(filters)
+    //console.log(filters)
     // Normalisation de la date
     const rawDate = filters.dateRange.from;
     const parsedDate = typeof rawDate === 'string' ? new Date(rawDate) : rawDate;
 
-    console.log("ℹ️ lancement useSearch")
+   //console.log("ℹ️ lancement useSearch")
 
     if (!parsedDate || isNaN(parsedDate.getTime())) {
       toast({
@@ -89,26 +89,27 @@ export const useSearch = () => {
       });
     } catch (error) {
       
-      console.error('Error triggering search:', error);
+      /*console.error('Error triggering search:', error);
       toast({
         title: "Search Error",
         description: (error as Error).message || "Something went wrong.",
         variant: "destructive",
-      });
+      });*/
     } finally {
       setIsSearching(false);
     }
   };
 
-  const stopSearch = () => {
+  const stopSearch = async () => {
     if (abortRef.current) {
       abortRef.current.abort();
-      setIsSearching(false);
-      toast({
-        title: "Recherche annulée",
-        description: "La recherche a été interrompue.",
-      });
     }
+    const response = await apiService.stopSearch();
+    setIsSearching(false);
+    toast({
+      title: "Recherche annulée",
+      description: "La recherche a été interrompue.",
+    });
   };
 
   // Toutes tes méthodes de gestion des filtres inchangées

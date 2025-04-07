@@ -1,5 +1,1 @@
-{
-  "/api/botState/route": "app/api/botState/route.js",
-  "/api/results/route": "app/api/results/route.js",
-  "/page": "app/page.js"
-}
+{}

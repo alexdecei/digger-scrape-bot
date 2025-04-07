@@ -6,7 +6,7 @@ export const apiService = {
     return res.json();
   },
 
-  setBotState: async (connect: boolean, oktaCode?: string) => {
+  setBotState: async (connect: boolean, oktaCode?: string, authUser?: string) => {
     const res = await fetch(`${BASE_URL}/botState`, {
       method: 'POST',
       headers: {
@@ -15,6 +15,7 @@ export const apiService = {
       body: JSON.stringify({
         action: connect ? 'start' : 'stop',
         oktaCode,
+        authUser,
       }),
     });
   
@@ -28,6 +29,13 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify(filters),
       signal, // 👈 ici on l’ajoute en option
+    });
+    return res.json();
+  },
+
+  stopSearch: async () => {
+    const res = await fetch(`${BASE_URL}/search`, {
+      method: 'DELETE',
     });
     return res.json();
   },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { startBot, stopBot, getRealBotStatus } from '@/lib/playwright';
+export const runtime = 'nodejs';
 
 export async function GET() {
   const status = await getRealBotStatus()
@@ -12,7 +13,8 @@ export async function POST(req: NextRequest) {
 
   if (action === 'start') {
     const oktaCode = body.oktaCode;
-    await startBot(oktaCode); 
+    const authUser = body.authUser;
+    await startBot(oktaCode, authUser); 
   }
 
   if (action === 'stop') {

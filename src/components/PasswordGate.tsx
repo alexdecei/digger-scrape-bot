@@ -5,11 +5,10 @@ import { useToast } from '@/hooks/use-toast';
 import { LockIcon, KeyIcon, ArrowRightIcon } from 'lucide-react';
 
 interface PasswordGateProps {
-  onAuthenticate: () => void;
-  correctPassword: string;
+  onAuthenticate: (password: string) => boolean;
 }
 
-const PasswordGate = ({ onAuthenticate, correctPassword }: PasswordGateProps) => {
+const PasswordGate = ({ onAuthenticate }: PasswordGateProps) => {
   const [password, setPassword] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,13 +23,12 @@ const PasswordGate = ({ onAuthenticate, correctPassword }: PasswordGateProps) =>
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password === correctPassword) {
+  
+    const success = onAuthenticate(password); // <--- retourne true ou false
+  
+    if (success) {
       setIsAnimating(true);
-      
-      // Animate out and then authenticate
       setTimeout(() => {
-        onAuthenticate();
         toast({
           title: "Access Granted",
           description: "Welcome to Digger.",
@@ -42,18 +40,17 @@ const PasswordGate = ({ onAuthenticate, correctPassword }: PasswordGateProps) =>
         description: "Incorrect password. Please try again.",
         variant: "destructive",
       });
-      
-      // Shake animation
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 500);
     }
   };
 
+  
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-background to-background/95 flex items-center justify-center z-50 p-4">
       <div 
         className={`w-full max-w-md p-8 glass-panel animate-scale-in 
-                   ${isAnimating ? (password === correctPassword ? 'animate-fade-out' : 'animate-[shake_0.5s_ease-in-out]') : ''}`}
+                   ${isAnimating ? 'animate-fade-out' : ''}`}
       >
         <div className="text-center mb-8">
           <div className="mx-auto w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6">

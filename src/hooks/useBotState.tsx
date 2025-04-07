@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { BotState, Result } from '..';
 import { toast } from '@/hooks/use-toast';
 import { apiService } from '@/utils/apiService';
+import { getAuth } from "@/utils/authStore";
+
 
 const getInitialState = (): BotState => {
   if (typeof window !== 'undefined') {
@@ -58,8 +60,12 @@ export const useBotState = () => {
   }, []);
 
   const connectBot = async () => {
+    
+  const user = getAuth();
+  console.log("🔐 Authentifié en tant que :", user);
+
     try {
-      const status = await apiService.setBotState(true, botState.oktaCode);
+      const status = await apiService.setBotState(true, botState.oktaCode, user);
       console.log("🟢 Bot connected: " + status.status.isConnected);
       console.log("🟢 Bot searching: " + status.status.isSearching);
       updateLocalBotState(prev => ({
