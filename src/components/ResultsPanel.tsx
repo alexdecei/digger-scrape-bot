@@ -2,10 +2,16 @@
 
 import { useState } from 'react';
 import { CheckSquare, Square, Copy, Download } from 'lucide-react';
-import { useResults } from '@/hooks/useResults';
+import { Result, useResults } from '@/hooks/useResults';
 
 interface ResultsPanelProps {
   isConnected: boolean;
+  results: Result[];
+  filteredResults: Result[];
+  toggleResultSelection: (id: string) => void;
+  selectAllResults: (selected: boolean) => void;
+  copySelectedResults: () => void;
+  exportSelectedResults: () => void;
 }
 
 const ResultsPanel = ({ isConnected: isConnected }: ResultsPanelProps) => {

@@ -8,7 +8,7 @@ set PROJECT_DIR=%USERPROFILE%\digger-scrape-bot
 
 REM Si le dossier n'existe pas, cloner le repo
 if not exist "%PROJECT_DIR%" (
-    echo Clonage du depôt GitHub...
+    echo Clonage du depot GitHub...
     git clone https://github.com/alexdecei/digger-scrape-bot.git "%PROJECT_DIR%"
     
 )
@@ -18,7 +18,7 @@ cd "%PROJECT_DIR%"
 REM Sauvegarder le hash actuel
 for /f %%i in ('git rev-parse HEAD') do set "OLD_HASH=%%i"
 
-echo Mise a jour du depôt...
+echo Mise a jour du depot...
 git pull
 
 REM Recuperer le nouveau hash

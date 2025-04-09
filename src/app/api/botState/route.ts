@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   if (action === 'start') {
     const oktaCode = body.oktaCode;
     const authUser = body.authUser;
-    await startBot(oktaCode, authUser); 
+    await startBot(oktaCode); 
   }
 
   if (action === 'stop') {
