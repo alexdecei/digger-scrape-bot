@@ -164,6 +164,8 @@ async function runSingleSearch(prenom: string, codePostal: string, codes: string
   console.log("LANCEMENT SUR : ")
   console.log("🔻 "+ prenom)
   console.log("🔻 "+ codePostal)
+  console.log("🔻 "+ dateMin)
+  console.log("🔻 "+ mode)
   console.log("\n")
 
   const alert = await searchPage.waitForEvent('dialog', { timeout: 1000 }).catch(() => null);
@@ -227,17 +229,30 @@ async function scanResultTable(codes: string[], dateMin: Date, mode: string) {
 async function checkDetails(numeroAbo: string, dateMin: Date, codes: string[], mode: string, ligne: number): Promise<boolean> {
   if (!searchPage || !mainPage) return false;
 
-  console.log("❓ potentiel: ", numeroAbo);
+  //console.log("❓ potentiel: ", numeroAbo);
 
   await searchPage.locator(`table tr:nth-child(${ligne}) td:first-child a`).click();
+
+  //const titleFrame = await mainPage.frame({ name: 'titleFrame' });
   const rightFrame = await mainPage.frame({ name: '_right' });
-  if (!rightFrame) return false;
+
+  try {
+    await rightFrame.waitForFunction(
+      (expected) => {
+        const el = document.querySelector('#numabo');
+        return el && el instanceof HTMLInputElement && el.value === expected;
+      },
+      numeroAbo,
+      { timeout: 5000 }
+    );
+  } catch (e) {
+    console.log("❌❌❌ délais d'affichage trop long pour :", numeroAbo);
+    return false;
+  }
 
   switch (mode) {
     case "Statut": {
       try {
-        await rightFrame.waitForSelector('#datcre');
-
         const codeStatut = await rightFrame.textContent('#cfull');
         const distributeur = await rightFrame.textContent('#numdist');
 
@@ -257,7 +272,6 @@ async function checkDetails(numeroAbo: string, dateMin: Date, codes: string[], m
     }
     case "Annulation": {
       try {
-        await rightFrame.waitForSelector('#lannul');
         const dateStr = await rightFrame.textContent('#lannul');
         const match = dateStr?.match(/\((\d{2}\/\d{2}\/\d{4})\)/);
 
@@ -303,12 +317,12 @@ function attachLifecycleHooks() {
 
 function cleanBotState() {
   console.log("💀💀💀💀");
-  isConnected = false;
   isSearching = false;
-  browser = null;
-  mainPage = null;
   searchPage = null;
+  mainPage = null;
   context = null;
+  browser = null;
+  isConnected = false;
 }
 
 export async function getRealBotStatus() {

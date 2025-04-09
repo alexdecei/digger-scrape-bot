@@ -1,33 +1,55 @@
 @echo off
 setlocal
 
-echo ## Lancement de DIGGER BOT
+echo === Demarrage du script Digger ===
 
-:: Déplacement dans le dossier de l'utilisateur
-cd /d %USERPROFILE%
+REM Chemin du projet
+set PROJECT_DIR=%USERPROFILE%\digger-scrape-bot
 
-:: Vérifie si le dossier existe
-if not exist digger-scrape-bot (
-    echo ## Clonage du dépôt...
-    git clone https://github.com/alexdecei/digger-scrape-bot.git
+REM Si le dossier n'existe pas, cloner le repo
+if not exist "%PROJECT_DIR%" (
+    echo Clonage du depôt GitHub...
+    git clone https://github.com/alexdecei/digger-scrape-bot.git "%PROJECT_DIR%"
+    
 )
 
-:: Déplacement dans le dossier du projet
-cd digger-scrape-bot
+cd "%PROJECT_DIR%"
 
-echo ## Mise à jour du dépôt...
+REM Sauvegarder le hash actuel
+for /f %%i in ('git rev-parse HEAD') do set "OLD_HASH=%%i"
+
+echo Mise a jour du depôt...
 git pull
 
-echo ## Installation des dépendances...
-call npm install
+REM Recuperer le nouveau hash
+for /f %%i in ('git rev-parse HEAD') do set "NEW_HASH=%%i"
 
-echo ## Installation de Playwright...
-call npx playwright install
+REM Verifier si le hash a change
+if "%OLD_HASH%"=="%NEW_HASH%" (
+    echo Aucun changement dans le code. Lancement direct.
+) else (
+    echo Changements detectes. Installation et build...
 
-echo ## Compilation du projet pour la prod...
-call npm run build
+    echo Installation des dependances...
+    npm install
 
-echo ## Lancement du serveur en mode production...
-call npm start
+    echo Installation de Playwright...
+    npx playwright install
 
+)
+
+echo Compilation du projet...
+call npm run build || goto build_failed
+
+:build_failed
+echo Le build a échoué. Vérifiez les erreurs ci-dessus.
+pause
+exit /b
+
+echo Lancement de l'application...
+echo === Lancement de l'application ===
+
+cmd /k npm start
+
+endlocal
 pause
