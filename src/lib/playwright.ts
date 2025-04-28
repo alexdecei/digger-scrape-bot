@@ -76,7 +76,7 @@ export async function loginWithOkta(oktaCode: string, authUser: string) {
   else
     {
       await mainPage.fill('#cuser', 'VAD-DCY2');
-      await mainPage.fill('#pass', 'Canal974**y');
+      await mainPage.fill('#pass', 'Canal974**yy');
     }
 
   
